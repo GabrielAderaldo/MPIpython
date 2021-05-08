@@ -20,7 +20,7 @@ def salvar_arquivo(numero_de_matrizes):
 
     for _ in range(numero_de_matrizes):
         #matriz = np.random.random((3,3))
-        matriz = np.array([1,2,3,4])
+        matriz = np.matrix('1,2,3;4,5,6;7,8,9')
         matrizes.append(matriz)
     with open("matrizParaCalcular.pickle","wb") as matrizCalculada:
         picles.dump(matrizes, matrizCalculada)
@@ -31,6 +31,17 @@ def carregar_arquivo():
         arquivoLido = picles.load(matrizCalculada)
 
     return arquivoLido
+
+def pegar_Matrix(matriz,numero_ranks):
+    matrix = np.array_split(matriz,rank_total)
+    return matrix
+
+
+def soma(dado,dado2):
+    valor_somar = int(dado["valor"])
+    valor_somar2 = int(dado2)
+
+    return valor_somar + valor_somar2
 
 
 
@@ -44,8 +55,57 @@ if __name__ == '__main__':
         rank = com.Get_rank() #Rank atual...
         rank_total = com.Get_size() #Pegando numero de processos(Ranks total)
         matrizes = carregar_arquivo()
+        valor_matrix_total = pegar_Matrix(matrizes, rank_total)
 
 
+        if rank == 0:
+            print(f"entrou no rank: {rank}")
+            arquivo_enviar = {"valor":1}
+            #ate aqui funciona...
+            valor_matrix_rank = valor_matrix_total[rank]
+            if len(valor_matrix_rank) != 1:
+                for i in range(len(valor_matrix_rank)-1):
+                    multi = np.dot(valor_matrix_rank[i], valor_matrix_rank[i+1])
+                print(multi)
+
+
+
+            enviador = com.isend(arquivo_enviar,dest=rank+1,tag=rank+1)
+            enviador.wait()
+        if rank != 0 and rank != rank_total-1:
+            print(f"entrou no rank: {rank}")
+            recebidor = com.irecv(source=rank-1,tag=rank)
+            dado_recebido = recebidor.wait()
+            valor_matrix_rank = valor_matrix_total[rank]
+            if len(valor_matrix_rank) != 1:
+                for i in range(len(valor_matrix_rank)-1):
+                    multi = np.dot(valor_matrix_rank[i], valor_matrix_rank[i + 1])
+                print(multi)
+            #valor_enviar = soma(dado_recebido,1)
+            #dado_trabalhado = int(dado_recebido["valor"])
+            #segunda_informacao = int(1)
+            #valor_enviar = dado_trabalhado + segunda_informacao
+            dado_enviado = {"valor":dado_recebido}
+            enviador = com.isend(dado_enviado,dest=rank+1,tag=rank+1)
+            enviador.wait()
+
+        if rank == rank_total-1:
+            valor_matrix_rank = valor_matrix_total[rank]
+            print(f"entrou no rank: {rank}")
+            recebidor = com.irecv(source=rank - 1,tag=rank)
+            dado_recebido = recebidor.wait()
+            valor_enviar = dado_recebido["valor"]
+            if len(valor_matrix_rank) != 1:
+                for i in range(len(valor_matrix_rank)-1):
+                    multi = np.dot(valor_matrix_rank[i], valor_matrix_rank[i + 1])
+                print(multi)
+
+            print(valor_enviar)
+
+
+
+
+        '''
 
         if isPar(rank) == True:
 
@@ -107,7 +167,7 @@ if __name__ == '__main__':
                 matriz_enviar = {"valor":dado_enviar}
                 req = com.isend(dest= rank+1,tag= rank+1)
                 req.wait()
-
+    '''
 
 
     else:
