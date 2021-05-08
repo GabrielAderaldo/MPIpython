@@ -56,20 +56,18 @@ if __name__ == '__main__':
         rank_total = com.Get_size() #Pegando numero de processos(Ranks total)
         matrizes = carregar_arquivo()
         valor_matrix_total = pegar_Matrix(matrizes, rank_total)
-
+        print(valor_matrix_total)
 
         if rank == 0:
             print(f"entrou no rank: {rank}")
-            arquivo_enviar = {"valor":1}
-            #ate aqui funciona...
             valor_matrix_rank = valor_matrix_total[rank]
             if len(valor_matrix_rank) != 1:
                 for i in range(len(valor_matrix_rank)-1):
                     multi = np.dot(valor_matrix_rank[i], valor_matrix_rank[i+1])
-                print(multi)
 
-
-
+            else:
+                multi = valor_matrix_rank[0]
+            arquivo_enviar = {"valor": multi}
             enviador = com.isend(arquivo_enviar,dest=rank+1,tag=rank+1)
             enviador.wait()
         if rank != 0 and rank != rank_total-1:
@@ -80,12 +78,12 @@ if __name__ == '__main__':
             if len(valor_matrix_rank) != 1:
                 for i in range(len(valor_matrix_rank)-1):
                     multi = np.dot(valor_matrix_rank[i], valor_matrix_rank[i + 1])
-                print(multi)
-            #valor_enviar = soma(dado_recebido,1)
-            #dado_trabalhado = int(dado_recebido["valor"])
-            #segunda_informacao = int(1)
-            #valor_enviar = dado_trabalhado + segunda_informacao
-            dado_enviado = {"valor":dado_recebido}
+            else:
+                multi = valor_matrix_rank[0]
+            #Fazer multiplicação de fora
+            dado_trabalhado = dado_recebido['valor']
+            valor_enviar = np.dot(multi,dado_trabalhado)
+            dado_enviado = {"valor":valor_enviar}
             enviador = com.isend(dado_enviado,dest=rank+1,tag=rank+1)
             enviador.wait()
 
@@ -94,80 +92,23 @@ if __name__ == '__main__':
             print(f"entrou no rank: {rank}")
             recebidor = com.irecv(source=rank - 1,tag=rank)
             dado_recebido = recebidor.wait()
-            valor_enviar = dado_recebido["valor"]
+            valor_enviar = dado_recebido['valor']
+
             if len(valor_matrix_rank) != 1:
+                print(range(len(valor_matrix_rank)-1))
                 for i in range(len(valor_matrix_rank)-1):
                     multi = np.dot(valor_matrix_rank[i], valor_matrix_rank[i + 1])
-                print(multi)
-
-            print(valor_enviar)
-
-
-
-
-        '''
-
-        if isPar(rank) == True:
-
-            if rank == 0:   #Verificando se é o primeiro par. pois ele não tem de quem receber...
-                matrix_calcular = np.array_split(matrizes,rank_total)
-                valor_matriz = []
-                if len(matrix_calcular) != 1:
-
-                    valor_matriz = np.dot(matrix_calcular[rank][0],matrix_calcular[rank][1])  #Fazer o calculo interno das matrizes...
-                    print(valor_matriz)
-                    valor_enviar = {"valor":valor_matriz}
-
-                    req = com.isend(valor_enviar,dest=rank+1,tag=rank+1)
-                    req.wait()
-                else:
-                    if rank_total == 1:
-                       valor_enviar = {"valor":matrix_calcular[rank]}
-
-                    else:
-                        valor_enviar = {"valor": matrix_calcular[rank]}
-                        req = com.isend(valor_enviar, dest=rank+1, tag=rank+1)
-                        req.wait()
-
             else:
+                multi = valor_matrix_rank[0]
+            valor_final = np.dot(multi,valor_enviar)
+            print(f"Aqui meu valor final: {valor_final}")
 
-                matrix_calcular = np.array_split(matrizes, rank_total)
-                valor_matriz = None
-                res = com.irecv(source=rank, tag=rank)
-                dado_recebido = res.wait()
-                if len(matrix_calcular) != 1:
-                    matrix_calcular[rank] = np.dot(matrix_calcular[0], matrix_calcular[1])
-                matrix_recebida = dado_recebido['valor']
-                dado_enviar = np.dot(matrix_calcular, matrix_recebida)
-                matriz_enviar = {"valor": dado_enviar}
-                req = com.isend(dest=rank + 1, tag=rank + 1)
-                req.wait()
 
-        else:
-            if rank == rank_total-1:
-                matrix_calcular = np.array_split(matrizes,rank_total)
-                valor_matriz = None
-                res = com.irecv(source=rank,tag=rank)
-                dado_recebido = res.wait()
-                if len(matrix_calcular) != 1:
-                    matrix_calcular[rank] = np.dot(matrix_calcular[0],matrix_calcular[1])
 
-                valor_recebido = dado_recebido['valor']
-                valor_matriz = np.dot(matrix_calcular,valor_recebido)
-                print(f"A multiplicação final eh: {valor_matriz}")
-            else:
-                matrix_calcular = np.array_split(matrizes,rank_total)
-                valor_matriz = None
-                res = com.irecv(source=rank, tag=rank)
-                dado_recebido = res.wait()
-                if len(matrix_calcular) != 1:
-                    matrix_calcular[rank] = np.dot(matrix_calcular[0], matrix_calcular[1])
-                matrix_recebida = dado_recebido['valor']
-                dado_enviar = np.dot(matrix_calcular,matrix_recebida)
-                matriz_enviar = {"valor":dado_enviar}
-                req = com.isend(dest= rank+1,tag= rank+1)
-                req.wait()
-    '''
+
+
+
+
 
 
     else:
